@@ -24,30 +24,4 @@ public class BootStrappingController {
     public void getStartupMessage(@RequestBody InitPingMessage initPingMessage) throws InterruptedException {
         asyncRequests.sync(initPingMessage.getPort());
     }
-
-    @PostMapping("register") // Add a new endpoint for user registration
-    public ResponseEntity<String> registerUser(@RequestBody User user) throws IOException {
-        String userNode = UsersManager.getInstance().register(user);
-        return ResponseEntity.ok("User registered successfully");
-    }
-
-    @PostMapping("login")
-    public void loginUser(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        String username = request.getParameter("username");
-        String password = request.getParameter("password");
-
-        boolean isValidUser = false;
-        isValidUser = UsersManager.getInstance().Authenticate(username, password);
-
-
-        if (isValidUser)
-        {
-            User user = new User(username, password);
-            request.setAttribute("user", user);
-            request.getRequestDispatcher("/WEB-INF/jsp/welcome.jsp").forward(request, response);
-        } else {
-            request.setAttribute("errorMessage", "Invalid Credentials!!");
-            request.getRequestDispatcher("/WEB-INF/jsp/login.jsp").forward(request, response);
-        }
-    }
 }

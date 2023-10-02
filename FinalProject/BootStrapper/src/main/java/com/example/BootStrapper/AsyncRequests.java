@@ -33,6 +33,7 @@ public class AsyncRequests {
         JsonNode jsonNode = new ObjectMapper().createObjectNode();
         ArrayNode arrayNode=((ObjectNode) jsonNode).putArray("ports");
         ports.forEach(arrayNode::add);
+
         for(String portNum: ports) {
             String databaseNodeUrl = "http://localhost:" + portNum + "/bootstrapper";
             System.out.println(databaseNodeUrl);

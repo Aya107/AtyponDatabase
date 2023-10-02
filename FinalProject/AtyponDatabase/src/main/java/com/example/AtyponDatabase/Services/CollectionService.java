@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -28,7 +29,7 @@ public class CollectionService {
     @Autowired
     private AffinityService affinityService;
     public String createCollection(String databaseName,String collectionName, String schema) throws IOException {
-        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().writeLock().lock();
+//        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().writeLock().lock();
         try {
             if(isValid(schema)) {
 
@@ -38,6 +39,7 @@ public class CollectionService {
                 // Create the folder if it doesn't exist.
                 if (!file.exists()) {
                     file.mkdirs();
+                    DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().put(collectionName, new ReentrantReadWriteLock());
 
                     Collection collection = new Collection();
                     collection.setName(collectionName);
@@ -58,19 +60,24 @@ public class CollectionService {
                 return "The schema is not valid. Please check the Data Types and try again.";
             }
         } finally {
-            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().writeLock().unlock();
+//            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().writeLock().unlock();
         }
 
     }
     public void deleteCollection(String databaseName,String collectionName) throws IOException {
-        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().writeLock().lock();
+        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().get(collectionName).writeLock().lock();
+        boolean flag = false;
         try {
             DatabaseManager.getInstance().getDatabases().get(databaseName).getCollections().remove(collectionName);
             String databaseFolderPath = System.getProperty("user.dir") + "/databases/" + databaseName;
             File collection = new File(databaseFolderPath, collectionName);
             FileSystemUtils.deleteRecursively(collection);
+            flag=true;
         } finally {
-            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().writeLock().unlock();
+            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().get(collectionName).writeLock().unlock();
+            if(flag) {
+                DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().remove(collectionName);
+            }
         }
     }
 
@@ -101,8 +108,12 @@ public class CollectionService {
         DatabaseManager.getInstance().getDatabases().get(databaseName).getCollections().get(collectionName).getDocuments().add("schema.json");
     }
 
+    public ResponseEntity<JsonNode> getSchemaFile(String databaseName, String collectionName) throws IOException {
+        return filters.filterById(databaseName, collectionName, "schema");
+    }
+
     public void createIndex(String databaseName, String collectionName, String schema) throws IOException {
-        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().writeLock().lock();
+        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().get(collectionName).writeLock().lock();
         try {
             Map<String, String> schemaMap = readSchema(schema);
             for (String key : schemaMap.keySet()) {
@@ -114,32 +125,32 @@ public class CollectionService {
                 }
             }
         }finally {
-            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().writeLock().unlock();
+            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().get(collectionName).writeLock().unlock();
         }
     }
 
     public ResponseEntity<List<JsonNode>> filterByKey(String databaseName, String collectionName, String key) throws IOException {
-        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().readLock().lock();
+        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().forEach((s, reentrantReadWriteLock) -> reentrantReadWriteLock.readLock().lock());
         try {
             return filters.filterByKey(databaseName, collectionName, key);
         } finally {
-            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().readLock().unlock();
+            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().forEach((s, reentrantReadWriteLock) -> reentrantReadWriteLock.readLock().unlock());
         }
     }
     public ResponseEntity<List<JsonNode>> filterByValue(String databaseName, String collectionName, String key, String value) throws IOException {
-        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().readLock().lock();
+        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().forEach((s, reentrantReadWriteLock) -> reentrantReadWriteLock.readLock().lock());
         try {
             return filters.filterByValue(databaseName, collectionName, key, value);
         }finally {
-            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().readLock().unlock();
+            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().forEach((s, reentrantReadWriteLock) -> reentrantReadWriteLock.readLock().unlock());
         }
     }
     public ResponseEntity<JsonNode> filterById(String databaseName, String collectionName, String id) throws IOException {
-        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().readLock().lock();
+        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().forEach((s, reentrantReadWriteLock) -> reentrantReadWriteLock.readLock().lock());
         try {
             return filters.filterById(databaseName, collectionName, id);
         }finally {
-            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().readLock().unlock();
+            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().forEach((s, reentrantReadWriteLock) -> reentrantReadWriteLock.readLock().unlock());
         }
     }
 
@@ -155,7 +166,7 @@ public class CollectionService {
     }
 
     public List<String> getAllCollections(String databaseName) {
-        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().readLock().lock();
+        DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().forEach((s, reentrantReadWriteLock) -> reentrantReadWriteLock.readLock().lock());
         try {
             List<String> CollectionsNames = new ArrayList<>();
             for (String CollectionName : DatabaseManager.getInstance().getDatabases().get(databaseName).getCollections().keySet()) {
@@ -163,7 +174,7 @@ public class CollectionService {
             }
             return CollectionsNames;
         } finally {
-            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().readLock().unlock();
+            DatabaseManager.getInstance().getDatabases().get(databaseName).getCollectionLock().forEach((s, reentrantReadWriteLock) -> reentrantReadWriteLock.readLock().unlock());
         }
     }
 }

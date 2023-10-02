@@ -87,4 +87,10 @@ public class CollectionController {
     public List<String> getAllCollections(@RequestParam String databaseName){
         return collectionService.getAllCollections(databaseName);
     }
+
+    @GetMapping("/getSchema")
+    public ResponseEntity<JsonNode> getSchema(@RequestParam String databaseName, @RequestParam String collectionName) throws IOException {
+        System.out.println(45498745);
+        return collectionService.getSchemaFile(databaseName, collectionName);
+    }
 }

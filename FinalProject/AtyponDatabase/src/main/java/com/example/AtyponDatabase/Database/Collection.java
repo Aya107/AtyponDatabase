@@ -13,5 +13,5 @@ public class Collection {
     private String name;
     private List<String> documents = new ArrayList<>();
     private Map<String, Map<String, DocumentIndex>> indexes = new HashMap<>();
-    private ReentrantReadWriteLock documentLock = new ReentrantReadWriteLock();
+    private Map<String, ReentrantReadWriteLock> documentLock = new HashMap<>();
 }

@@ -15,7 +15,7 @@ public class BootStrapper {
 
     @PostConstruct
     public static void init() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-
+        UsersManager.getInstance().getUsersFromStorage();
         Shell.getInstance().runShellCommand("docker network create NoSqlNetwork");
 
         for(int i=8080; i<8082; i++) {

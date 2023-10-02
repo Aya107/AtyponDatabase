@@ -3,6 +3,7 @@ package com.example.AtyponDatabase.Controllers;
 import com.example.AtyponDatabase.Managers.ClusterManager;
 import com.example.AtyponDatabase.Services.CollectionService;
 import com.example.AtyponDatabase.Services.DocumentService;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.bind.annotation.*;
@@ -68,7 +69,7 @@ public class DocumentController {
         }
         else if(firstReq)
         {
-            String node = affinity;// need edit useless
+            String node = affinity;
             String clusterDatabaseUrl = "http://host.docker.internal:" + node + "/document/delete?databaseName=" + databaseName + "&collectionName=" + collectionName + "&fileName=" + fileName + "&firstReq=false";
             restTemplate.exchange(clusterDatabaseUrl, HttpMethod.DELETE, null, String.class);
 
@@ -118,7 +119,7 @@ public class DocumentController {
     }
 
     @GetMapping("/getAllDocuments")
-    public List<String> getAllDocuments(@RequestParam String databaseName, @RequestParam String collectionName){
+    public List<JsonNode> getAllDocuments(@RequestParam String databaseName, @RequestParam String collectionName) throws IOException {
         return documentService.getAllDocuments(databaseName, collectionName);
     }
 }

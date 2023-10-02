@@ -4,13 +4,14 @@ import com.example.AtyponDatabase.Database.Database;
 import lombok.Data;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Data
 public class DatabaseManager {
     private static volatile DatabaseManager instance;
     private HashMap<String, Database> databases = new HashMap<>();
-    private ReentrantReadWriteLock databaseLock=new ReentrantReadWriteLock();
+    private Map<String, ReentrantReadWriteLock> databaseLock = new HashMap<>();
 
 
     public DatabaseManager() {
